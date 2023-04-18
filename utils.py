@@ -1,6 +1,7 @@
 import numpy as np
 
 
+
 def _make_homogeneous_rep_matrix(R, t):
     P = np.zeros((4,4))
     P[:3,:3] = R
@@ -87,15 +88,20 @@ def get_projection_matrix(camera_id):
     P = cmtx @ _make_homogeneous_rep_matrix(rvec, tvec)[:3,:]
     return P
 
-def write_keypoints_to_disk(filename, kpts):
+def write_keypoints_to_disk(filename, kpts, geslines):
     fout = open(filename, 'w')
+    c = 0
 
     for frame_kpts in kpts:
+        if c in geslines:
+            fout.write("Recording" + ' ')
+        c+=1
         for kpt in frame_kpts:
             if len(kpt) == 2:
                 fout.write(str(kpt[0]) + ' ' + str(kpt[1]) + ' ')
             else:
                 fout.write(str(kpt[0]) + ' ' + str(kpt[1]) + ' ' + str(kpt[2]) + ' ')
+
 
         fout.write('\n')
     fout.close()

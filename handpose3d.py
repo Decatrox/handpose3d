@@ -4,12 +4,19 @@ import numpy as np
 import sys
 from utils import DLT, get_projection_matrix, write_keypoints_to_disk
 
+#from numba import jit, cuda
+
+
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 
 frame_shape = [720, 1280]
 
+#@jit(target_backend='cuda')
 def run_mp(input_stream1, input_stream2, P0, P1):
+    ges = False
+    gestime = []
+    gesnum = 0
     #input video stream
     cap0 = cv.VideoCapture(input_stream1)
     cap1 = cv.VideoCapture(input_stream2)
@@ -99,12 +106,14 @@ def run_mp(input_stream1, input_stream2, P0, P1):
             else:
                 _p3d = DLT(P0, P1, uv1, uv2) #calculate 3d position of keypoint
             frame_p3ds.append(_p3d)
+            #frame_p3ds.append(ges)
 
         '''
         This contains the 3d position of each keypoint in current frame.
         For real time application, this is what you want.
         '''
-        frame_p3ds = np.array(frame_p3ds).reshape((21, 3))
+        frame_p3ds = np.array(frame_p3ds).reshape((21, 3)) #was 21, 3
+        #frame_p3ds = np.insert(frame_p3ds, 0, ges, axis=0)
         kpts_3d.append(frame_p3ds)
 
         # Draw the hand annotations on the image.
@@ -124,14 +133,23 @@ def run_mp(input_stream1, input_stream2, P0, P1):
         cv.imshow('cam0', frame0)
 
         k = cv.waitKey(1)
-        if k & 0xFF == 27: break #27 is ESC key.
+        if k & 0xFF == 27:
+            break #27 is ESC key.
+        elif k & 0xFF == ord('q'):
+            ges = True
+        elif k & 0xFF == ord('w'):
+            ges = False
+
+        gesnum += 1
+        if ges:
+            gestime.append(gesnum)
 
 
     cv.destroyAllWindows()
     for cap in caps:
         cap.release()
 
-    return np.array(kpts_cam0), np.array(kpts_cam1), np.array(kpts_3d)
+    return np.array(kpts_cam0), np.array(kpts_cam1), np.array(kpts_3d), gestime
 
 if __name__ == '__main__':
 
@@ -146,9 +164,11 @@ if __name__ == '__main__':
     P0 = get_projection_matrix(0)
     P1 = get_projection_matrix(1)
 
-    kpts_cam0, kpts_cam1, kpts_3d = run_mp(input_stream1, input_stream2, P0, P1)
+    # kpts_cam0, kpts_cam1, kpts_3d = run_mp(input_stream1, input_stream2, P0, P1)
+    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(0, 4, P0, P1)
+
 
     #this will create keypoints file in current working folder
     #write_keypoints_to_disk('kpts_cam0.dat', kpts_cam0)
     #write_keypoints_to_disk('kpts_cam1.dat', kpts_cam1)
-    #write_keypoints_to_disk('kpts_3d.dat', kpts_3d)
+    write_keypoints_to_disk('kpts_3d.dat', kpts_3d, geslines)

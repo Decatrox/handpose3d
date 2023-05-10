@@ -35,6 +35,12 @@ model.add(Dense(actions.shape[0], activation='softmax'))
 #model2 = load_model('action.h5')
 model.load_weights('actionHighAcc.h5')
 #print(model.summary())
-a = np.loadtxt('TestingFile-ZoomOut')
+a = np.loadtxt('TestingFile-Nothing')
 res = model.predict(np.expand_dims(a, axis=0))[0]
 print(actions[np.argmax(res)])
+
+rrr = [7, 0, 1, 2, 3, 4, 5]
+print(rrr[-4:])
+rrr.pop(0)
+rrr.remove(0)
+print(rrr)

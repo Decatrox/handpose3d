@@ -3,6 +3,28 @@ import mediapipe as mp
 import numpy as np
 import sys
 from utils import DLT, get_projection_matrix, write_keypoints_to_disk
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.callbacks import TensorBoard
+#from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.layers import Masking
+import numpy as np
+import tensorflow as tf
+
+# actions = np.array(['rotatec', 'zoomin', 'zoomout'])
+actions = np.array(['rotatec','rotateac', 'zoomin', 'zoomout', 'random'])
+
+model = Sequential()
+model.add(Masking(mask_value=-1, input_shape=(20, 63)))
+model.add(LSTM(64, return_sequences=True, activation='relu'))
+model.add(LSTM(128, return_sequences=True, activation='relu'))
+model.add(LSTM(64, return_sequences=False, activation='relu'))
+model.add(Dense(64, activation='relu'))
+model.add(Dense(32, activation='relu'))
+model.add(Dense(actions.shape[0], activation='softmax'))
+
+model.load_weights('action5Motions.h5')
 
 #from numba import jit, cuda
 
@@ -17,6 +39,7 @@ def run_mp(input_stream1, input_stream2, P0, P1):
     ges = False
     gestime = []
     gesnum = 0
+    action = ''
     #input video stream
     cap0 = cv.VideoCapture(input_stream1)
     cap1 = cv.VideoCapture(input_stream2)
@@ -35,6 +58,7 @@ def run_mp(input_stream1, input_stream2, P0, P1):
     kpts_cam0 = []
     kpts_cam1 = []
     kpts_3d = []
+    testseq = []
     while True:
 
         #read frames from stream
@@ -77,7 +101,7 @@ def run_mp(input_stream1, input_stream2, P0, P1):
             #if no keypoints are found, simply fill the frame data with [-1,-1] for each kpt
             frame0_keypoints = [[-1, -1]]*21
 
-        kpts_cam0.append(frame0_keypoints)
+        #kpts_cam0.append(frame0_keypoints)
 
         #frame1 kpts
         frame1_keypoints = []
@@ -95,7 +119,7 @@ def run_mp(input_stream1, input_stream2, P0, P1):
             frame1_keypoints = [[-1, -1]]*21
 
         #update keypoints container
-        kpts_cam1.append(frame1_keypoints)
+        #pts_cam1.append(frame1_keypoints)
 
 
         #calculate 3d position
@@ -112,10 +136,11 @@ def run_mp(input_stream1, input_stream2, P0, P1):
         This contains the 3d position of each keypoint in current frame.
         For real time application, this is what you want.
         '''
+        testframe = frame_p3ds
         frame_p3ds = np.array(frame_p3ds).reshape((21, 3)) #was 21, 3
         #frame_p3ds = np.insert(frame_p3ds, 0, ges, axis=0)
         kpts_3d.append(frame_p3ds)
-
+        testseq.append((np.array(testframe)).reshape(63))
         # Draw the hand annotations on the image.
         frame0.flags.writeable = True
         frame1.flags.writeable = True
@@ -131,6 +156,16 @@ def run_mp(input_stream1, input_stream2, P0, P1):
             mp_drawing.draw_landmarks(frame1, hand_landmarks, mp_hands.HAND_CONNECTIONS)
         cv.imshow('cam1', frame1)
         cv.imshow('cam0', frame0)
+
+        #test
+        if len(testseq) > 20:
+            testres = model.predict(np.expand_dims(testseq[-20:], axis=0), verbose=0)[0]
+            newAction = actions[np.argmax(testres)]
+            if not (action == newAction):
+                action = newAction
+                #print(testres)
+                print(action)
+            testseq.pop(0)
 
         k = cv.waitKey(1)
         if k & 0xFF == 27:
@@ -165,7 +200,7 @@ if __name__ == '__main__':
     P1 = get_projection_matrix(1)
 
     # kpts_cam0, kpts_cam1, kpts_3d = run_mp(input_stream1, input_stream2, P0, P1)
-    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(2, 4, P0, P1)
+    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(4, 2, P0, P1)
 
 
     #this will create keypoints file in current working folder

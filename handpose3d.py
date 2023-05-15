@@ -161,6 +161,8 @@ def run_mp(input_stream1, input_stream2, P0, P1):
         if len(testseq) > 20:
             testres = model.predict(np.expand_dims(testseq[-20:], axis=0), verbose=0)[0]
             newAction = actions[np.argmax(testres)]
+            with open('commands.txt', 'w') as f:
+                f.write(newAction+':0.1')
             if not (action == newAction):
                 action = newAction
                 #print(testres)

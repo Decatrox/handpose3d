@@ -1,1 +1,1 @@
-zoomin:0
+rotateAC:0.1

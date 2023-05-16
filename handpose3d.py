@@ -3,28 +3,60 @@ import mediapipe as mp
 import numpy as np
 import sys
 from utils import DLT, get_projection_matrix, write_keypoints_to_disk
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.callbacks import TensorBoard
-#from sklearn.model_selection import train_test_split
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.layers import Masking
-import numpy as np
-import tensorflow as tf
-
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.layers import LSTM, Dense
+# from tensorflow.keras.callbacks import TensorBoard
+# #from sklearn.model_selection import train_test_split
+# from tensorflow.keras.utils import to_categorical
+# from tensorflow.keras.layers import Masking
+# import numpy as np
+# import tensorflow as tf
+#
 # actions = np.array(['rotatec', 'zoomin', 'zoomout'])
-actions = np.array(['rotatec','rotateac', 'zoomin', 'zoomout', 'random'])
+# # actions = np.array(['rotatec','rotateac', 'zoomin', 'zoomout', 'random'])
+#
+# model = Sequential()
+# model.add(Masking(mask_value=-1, input_shape=(20, 63)))
+# model.add(LSTM(64, return_sequences=True, activation='relu'))
+# model.add(LSTM(128, return_sequences=True, activation='relu'))
+# model.add(LSTM(64, return_sequences=False, activation='relu'))
+# model.add(Dense(64, activation='relu'))
+# model.add(Dense(32, activation='relu'))
+# model.add(Dense(actions.shape[0], activation='softmax'))
+
+# model.load_weights('action5Motions.h5')
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Masking, LSTM, Dense, Dropout
+from tensorflow.keras.regularizers import l2
+actions = np.array(['rotateC','rotateAC', 'zoomin', 'zoomout', 'random', 'up2down'])
 
 model = Sequential()
-model.add(Masking(mask_value=-1, input_shape=(20, 63)))
-model.add(LSTM(64, return_sequences=True, activation='relu'))
-model.add(LSTM(128, return_sequences=True, activation='relu'))
-model.add(LSTM(64, return_sequences=False, activation='relu'))
-model.add(Dense(64, activation='relu'))
-model.add(Dense(32, activation='relu'))
+model.add(Masking(mask_value=-1, input_shape=(15, 63)))
+
+# LSTM layers with dropout for regularization
+model.add(LSTM(64, return_sequences=True))
+model.add(Dropout(0.5))
+model.add(LSTM(128, return_sequences=True))
+model.add(Dropout(0.5))
+model.add(LSTM(64))
+
+# Dense layers with dropout for regularization
+model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.01)))
+model.add(Dropout(0.5))
+model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.01)))
+model.add(Dropout(0.5))
+
+# Output layer
 model.add(Dense(actions.shape[0], activation='softmax'))
 
-model.load_weights('action5Motions.h5')
+# Compile the model
+from tensorflow.keras.optimizers import Adam
+
+model.compile(loss='categorical_crossentropy',
+              optimizer=Adam(learning_rate=0.001),
+              metrics=['categorical_accuracy'])
+model.load_weights('newAction6Motions.h5')
 
 #from numba import jit, cuda
 
@@ -154,19 +186,19 @@ def run_mp(input_stream1, input_stream2, P0, P1):
         if results1.multi_hand_landmarks:
           for hand_landmarks in results1.multi_hand_landmarks:
             mp_drawing.draw_landmarks(frame1, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-        cv.imshow('cam1', frame1)
-        cv.imshow('cam0', frame0)
+        # cv.imshow('cam1', frame1)
+        # cv.imshow('cam0', frame0)
 
         #test
-        if len(testseq) > 20:
-            testres = model.predict(np.expand_dims(testseq[-20:], axis=0), verbose=0)[0]
+        if len(testseq) > 15:
+            testres = model.predict(np.expand_dims(testseq[-15:], axis=0), verbose=0)[0]
             newAction = actions[np.argmax(testres)]
             with open('commands.txt', 'w') as f:
                 f.write(newAction+':0.1')
             if not (action == newAction):
                 action = newAction
-                #print(testres)
                 print(action)
+                print(testres)
             testseq.pop(0)
 
         k = cv.waitKey(1)
@@ -202,7 +234,7 @@ if __name__ == '__main__':
     P1 = get_projection_matrix(1)
 
     # kpts_cam0, kpts_cam1, kpts_3d = run_mp(input_stream1, input_stream2, P0, P1)
-    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(4, 2, P0, P1)
+    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(2, 4, P0, P1)
 
 
     #this will create keypoints file in current working folder

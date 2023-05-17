@@ -53,10 +53,10 @@ model.add(Dense(actions.shape[0], activation='softmax'))
 # Compile the model
 from tensorflow.keras.optimizers import Adam
 
-model.compile(loss='categorical_crossentropy',
-              optimizer=Adam(learning_rate=0.001),
-              metrics=['categorical_accuracy'])
-model.load_weights('newAction6Motions.h5')
+# model.compile(loss='categorical_crossentropy',
+#               optimizer=Adam(learning_rate=0.001),
+#               metrics=['categorical_accuracy'])
+model.load_weights('90percent.h5')
 
 #from numba import jit, cuda
 
@@ -186,15 +186,15 @@ def run_mp(input_stream1, input_stream2, P0, P1):
         if results1.multi_hand_landmarks:
           for hand_landmarks in results1.multi_hand_landmarks:
             mp_drawing.draw_landmarks(frame1, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-        # cv.imshow('cam1', frame1)
-        # cv.imshow('cam0', frame0)
+        cv.imshow('cam1', frame1)
+        cv.imshow('cam0', frame0)
 
         #test
         if len(testseq) > 15:
             testres = model.predict(np.expand_dims(testseq[-15:], axis=0), verbose=0)[0]
             newAction = actions[np.argmax(testres)]
             with open('commands.txt', 'w') as f:
-                f.write(newAction+':0.1')
+                f.write(newAction+':0.04')
             if not (action == newAction):
                 action = newAction
                 print(action)

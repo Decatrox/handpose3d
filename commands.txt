@@ -1,1 +1,1 @@
-rotateAC:0.1
+rotateC:0.04

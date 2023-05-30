@@ -1,1 +1,1 @@
-rotateC:0.04
+still:0.04

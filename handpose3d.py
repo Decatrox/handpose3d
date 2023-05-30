@@ -29,7 +29,7 @@ from utils import DLT, get_projection_matrix, write_keypoints_to_disk
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Masking, LSTM, Dense, Dropout
 from tensorflow.keras.regularizers import l2
-actions = np.array(['rotateC','rotateAC', 'zoomin', 'zoomout', 'random', 'up2down'])
+actions = np.array(['rotateC','rotateAC', 'up2down', 'down2up', 'left2right', 'right2left', 'zoomin', 'zoomout', 'random', 'still'])
 
 model = Sequential()
 model.add(Masking(mask_value=-1, input_shape=(15, 63)))
@@ -56,7 +56,7 @@ from tensorflow.keras.optimizers import Adam
 # model.compile(loss='categorical_crossentropy',
 #               optimizer=Adam(learning_rate=0.001),
 #               metrics=['categorical_accuracy'])
-model.load_weights('90percent.h5')
+model.load_weights('77percent.h5')
 
 #from numba import jit, cuda
 
@@ -193,9 +193,11 @@ def run_mp(input_stream1, input_stream2, P0, P1):
         if len(testseq) > 15:
             testres = model.predict(np.expand_dims(testseq[-15:], axis=0), verbose=0)[0]
             newAction = actions[np.argmax(testres)]
-            with open('commands.txt', 'w') as f:
-                f.write(newAction+':0.04')
+            
             if not (action == newAction):
+                with open('commands.txt', 'w') as f:
+                    f.write(newAction+':0.04')
+
                 action = newAction
                 print(action)
                 print(testres)

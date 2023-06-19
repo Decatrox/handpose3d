@@ -29,17 +29,41 @@ from utils import DLT, get_projection_matrix, write_keypoints_to_disk
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Masking, LSTM, Dense, Dropout
 from tensorflow.keras.regularizers import l2
-actions = np.array(['rotateC','rotateAC', 'up2down', 'down2up', 'left2right', 'right2left', 'zoomin', 'zoomout', 'random', 'still'])
+# actions = np.array(['rotateC', 'rotateAC', 'up2down', 'down2up', 'left2right', 'right2left', 'zoomin', 'zoomout', 'random', 'still'])
+# actions = np.array(['rotateC', 'rotateAC', 'zoomin', 'zoomout', 'random', 'up2down'])
+# actions = np.array(['rotateC', 'rotateAC', 'up2down', 'down2up', 'left2right', 'right2left', 'zoomin', 'zoomout', 'random'])
+# actions = np.array(['rotateC','rotateAC', 'up2down', 'down2up', 'left2right', 'right2left', 'zoomin', 'zoomout', 'idlec', 'idleac', 'idlefist', 'idlemouse'])
+actions = np.array(['rotateC','rotateAC', 'up2down', 'down2up', 'left2right', 'right2left', 'zoomin', 'zoomout', 'idlec', 'idleac', 'idlefist', 'idlemouse', 'idlezin', 'idlezout'])
+
+# model = Sequential()
+# model.add(Masking(mask_value=-1, input_shape=(15, 63)))
+#
+# # LSTM layers with dropout for regularization
+# model.add(LSTM(64, return_sequences=True))
+# model.add(Dropout(0.5))
+# model.add(LSTM(128, return_sequences=True))
+# model.add(Dropout(0.5))
+# model.add(LSTM(64))
+#
+# # Dense layers with dropout for regularization
+# model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.01)))
+# model.add(Dropout(0.5))
+# model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.01)))
+# model.add(Dropout(0.5))
+#
+# # Output layer
+# model.add(Dense(actions.shape[0], activation='softmax'))
+
 
 model = Sequential()
 model.add(Masking(mask_value=-1, input_shape=(15, 63)))
 
 # LSTM layers with dropout for regularization
-model.add(LSTM(64, return_sequences=True))
-model.add(Dropout(0.5))
 model.add(LSTM(128, return_sequences=True))
 model.add(Dropout(0.5))
-model.add(LSTM(64))
+model.add(LSTM(256, return_sequences=True))
+model.add(Dropout(0.5))
+model.add(LSTM(128))
 
 # Dense layers with dropout for regularization
 model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.01)))
@@ -53,10 +77,16 @@ model.add(Dense(actions.shape[0], activation='softmax'))
 # Compile the model
 from tensorflow.keras.optimizers import Adam
 
+model.compile(loss='categorical_crossentropy',
+              optimizer=Adam(learning_rate=0.001),
+              metrics=['categorical_accuracy'])
+# Compile the model
+
+
 # model.compile(loss='categorical_crossentropy',
 #               optimizer=Adam(learning_rate=0.001),
 #               metrics=['categorical_accuracy'])
-model.load_weights('77percent.h5')
+model.load_weights('97percentallstills.h5')
 
 #from numba import jit, cuda
 
@@ -236,10 +266,11 @@ if __name__ == '__main__':
     P1 = get_projection_matrix(1)
 
     # kpts_cam0, kpts_cam1, kpts_3d = run_mp(input_stream1, input_stream2, P0, P1)
-    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(2, 4, P0, P1)
+    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(4, 2, P0, P1)
 
 
     #this will create keypoints file in current working folder
     #write_keypoints_to_disk('kpts_cam0.dat', kpts_cam0)
     #write_keypoints_to_disk('kpts_cam1.dat', kpts_cam1)
+
     write_keypoints_to_disk('kpts_3d.dat', kpts_3d, geslines)

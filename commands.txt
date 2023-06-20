@@ -1,1 +1,1 @@
-idlemouse:0.04
+idle:0.04

@@ -266,7 +266,7 @@ if __name__ == '__main__':
     P1 = get_projection_matrix(1)
 
     # kpts_cam0, kpts_cam1, kpts_3d = run_mp(input_stream1, input_stream2, P0, P1)
-    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(4, 2, P0, P1)
+    kpts_cam0, kpts_cam1, kpts_3d, geslines = run_mp(0, 4, P0, P1)
 
 
     #this will create keypoints file in current working folder
